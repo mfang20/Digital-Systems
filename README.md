@@ -1,4 +1,5 @@
-# ECE-385
+# ECE 385 Digital Systems Laboratory
+
 (Still in progress, check back in January for my exciting final project demo!)    
 A description of the projects for UIUC ECE 385: Digital Systems Laboratory FA2021    
 Course website: https://ece.illinois.edu/academics/courses/ece385  
