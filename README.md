@@ -1,7 +1,7 @@
 # ECE-385
-(Still in progress, check back in January for my exciting final project demo!)  /n
-A description of the projects for UIUC ECE 385: Digital Systems Laboratory FA2021  /n
-Course website: https://ece.illinois.edu/academics/courses/ece385
+(Still in progress, check back in January for my exciting final project demo!)    
+A description of the projects for UIUC ECE 385: Digital Systems Laboratory FA2021    
+Course website: https://ece.illinois.edu/academics/courses/ece385  
 
 The SLC3, SDC and NIOS II, and VGA Text Mode Controller (and soon my final project!) are my favorite projects and I encourage you to look at them. 
 The static hazards and logic processor labs were completed on breadboards, all other projects were completed using SystemVerilog to program an FPGA.
@@ -12,7 +12,7 @@ The static hazards and logic processor labs were completed on breadboards, all o
 - SLC3: Created a modified SLC3 CPU that could perform various given tasks.
 - NIOS II: Enabled the FPGA to communicate with the NIOS II processor, VGA monitor, and USB peripherals.
 - VGA Text Mode Controller: Created a basic GPU which read from memory to display on a VGA monitor. 
-- Final project: In Progress!
+- Final project: In Progress!  
 
 Topics Covered:
 - Combinational logic circuits
