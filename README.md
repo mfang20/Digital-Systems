@@ -1,6 +1,6 @@
 # ECE-385
-(Still in progress, check back in January for my exciting final project demo!)  \n
-A description of the projects for UIUC ECE 385: Digital Systems Laboratory FA2021  \n
+(Still in progress, check back in January for my exciting final project demo!)  /n
+A description of the projects for UIUC ECE 385: Digital Systems Laboratory FA2021  /n
 Course website: https://ece.illinois.edu/academics/courses/ece385
 
 The SLC3, SDC and NIOS II, and VGA Text Mode Controller (and soon my final project!) are my favorite projects and I encourage you to look at them. 
