@@ -34,7 +34,7 @@ All projects here were worked in collaboration with Michael Grawe.
   
 # Running the final project
 To run the programs, you will need a VGA display, an FPGA (dE-10 Lite), an IO shield which supports Max3421E, and a USB keyboard.
-Open the project in Altera Quartus and program the device. Then open Eclipse from Quartus and run the code. The program will now be running on the FPGA.
+Open the project using Altera Quartus and program the device. The final project will be located in the final project folder. The Then open Eclipse from Quartus and run the code. The program will now be running on the FPGA.
 
 
 #  Academic Integrity reminder
