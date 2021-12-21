@@ -1,0 +1,35 @@
+module LFSR(	input Reset, frame_clk,
+					output logic [5:0] enemy_shoot1, enemy_shoot2, enemy_shoot3
+					);
+	//this module is purely used as a random number generator
+	
+	logic [7:0] LFSR1, LFSR2, LFSR3;
+			
+	always_ff @ (posedge Reset or posedge frame_clk)
+	begin
+		if(Reset)
+		begin	
+			//can probably pass up a random 8 bit string based from NIOS II later
+			//or can keep using these random numbers, doesn't have to be totally randomized
+			LFSR1 <= 8'b10101011; 
+			LFSR2 <= 8'b01000110;
+			LFSR3 <= 8'b11001001;
+		end	
+		else
+		begin	
+			//shifting
+			LFSR1[6:0] <= LFSR1[7:1];
+			LFSR2[6:0] <= LFSR2[7:1];
+			LFSR3[6:0] <= LFSR3[7:1];
+			//new bit is idx 0, 1, 2, 3 xord together
+			LFSR1[7] <= LFSR1[0] ^ LFSR1[1] ^ LFSR1[2] ^ LFSR1[3];
+			LFSR2[7] <= LFSR2[0] ^ LFSR2[1] ^ LFSR2[2] ^ LFSR2[3];
+			LFSR3[7] <= LFSR3[0] ^ LFSR3[1] ^ LFSR3[2] ^ LFSR3[3];
+			
+			//probability calculating can be done in enemy modules
+			enemy_shoot1 <= LFSR1[5:0];
+			enemy_shoot2 <= LFSR2[5:0];
+			enemy_shoot3 <= LFSR3[5:0];	
+		end
+	end
+endmodule

@@ -1,0 +1,60 @@
+module cannon(	input Reset, frame_clk, laser, collision,
+					input [9:0] ShipX, ShipY, ShipS, X_motion,
+					input prev_laser_exists,
+					output [9:0] laserX, laserY,
+					output logic laserexists
+					);
+
+	logic [9:0] laser_X_pos, laser_Y_pos, laser_X_motion, laser_size;
+	
+	parameter [9:0] laser_y_min=0;
+	
+	assign laser_size = 2;
+					
+	always_ff @ (posedge Reset or posedge frame_clk)
+	begin
+		if(Reset)
+		begin	//remove laser from screen
+			laserexists <= 0;
+			laser_X_pos <= 10'b0;
+			laser_Y_pos <= 10'b0;
+			laser_X_motion <= 0;
+			
+		end
+		
+		else if(laser && !laserexists && prev_laser_exists) //create a laser
+		begin	
+			laserexists <= 1;
+			laser_X_pos <= ShipX + ShipS[9:1] + 2; 
+			laser_Y_pos <= ShipY - 1;
+			laser_X_motion <= 2; //X_motion
+		end	
+		
+		else if(collision)
+		begin
+			laserexists <= 0;
+			laser_X_pos <= 10'b0;
+			laser_Y_pos <= 10'b0;
+		end
+		
+		else if ( (laser_Y_pos - laser_size) <= laser_y_min + 7)
+		begin	//remove laser from screen
+			laserexists <= 0;
+			laser_X_pos <= 10'b0;
+			laser_Y_pos <= 10'b0;
+		end
+				
+		else if(laserexists == 1'b1)
+		begin	//laser moves upwards
+			laser_X_pos <= laser_X_pos;	
+			laser_Y_pos <= (laser_Y_pos - 6);	
+		end
+	end
+	
+	assign laserX = laser_X_pos + laser_X_motion;
+	assign laserY = laser_Y_pos;
+	//assign laserS = laser_size;
+
+
+endmodule
+					

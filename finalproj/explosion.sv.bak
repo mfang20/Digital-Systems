@@ -1,0 +1,6 @@
+module explosion(	input Reset, 
+						input frame_clk,
+						input [9:0] e1X, e2X, e3X, e4X, e5X, e6X, e7X, e8X, e9X, e10X, e11X, e12X,
+                  input [9:0] e1Y, e2Y, e3Y, e4Y, e5Y, e6Y, e7Y, e8Y, e9Y, e10Y, e11Y, e12Y,
+						
+	

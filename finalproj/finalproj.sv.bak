@@ -1,0 +1,780 @@
+//-------------------------------------------------------------------------
+//                                                                       --
+//                                                                       --
+//      For use with ECE 385 Lab 62                                      --
+//		  Matthew Fang																		 --
+//      UIUC ECE Department                                              --
+//-------------------------------------------------------------------------
+
+
+module finalproj (
+
+      ///////// Clocks /////////
+      input     MAX10_CLK1_50, 
+
+      ///////// KEY /////////
+      input    [ 1: 0]   KEY,
+
+      ///////// SW /////////
+      input    [ 9: 0]   SW,
+
+      ///////// LEDR /////////
+      output   [ 9: 0]   LEDR,
+
+      ///////// HEX /////////
+      output   [ 7: 0]   HEX0,
+      output   [ 7: 0]   HEX1,
+      output   [ 7: 0]   HEX2,
+      output   [ 7: 0]   HEX3,
+      output   [ 7: 0]   HEX4,
+      output   [ 7: 0]   HEX5,
+
+      ///////// SDRAM /////////
+      output             DRAM_CLK,
+      output             DRAM_CKE,
+      output   [12: 0]   DRAM_ADDR,
+      output   [ 1: 0]   DRAM_BA,
+      inout    [15: 0]   DRAM_DQ,
+      output             DRAM_LDQM,
+      output             DRAM_UDQM,
+      output             DRAM_CS_N,
+      output             DRAM_WE_N,
+      output             DRAM_CAS_N,
+      output             DRAM_RAS_N,
+
+      ///////// VGA /////////
+      output             VGA_HS,
+      output             VGA_VS,
+      output   [ 3: 0]   VGA_R,
+      output   [ 3: 0]   VGA_G,
+      output   [ 3: 0]   VGA_B,
+
+
+      ///////// ARDUINO /////////
+      inout    [15: 0]   ARDUINO_IO,
+      inout              ARDUINO_RESET_N 
+
+);
+
+
+
+
+logic Reset_h, vssig, blank, sync, VGA_Clk;
+
+
+//=======================================================
+//  REG/WIRE declarations
+//=======================================================
+	logic SPI0_CS_N, SPI0_SCLK, SPI0_MISO, SPI0_MOSI, USB_GPX, USB_IRQ, USB_RST;
+	logic [3:0] hex_num_4, hex_num_3, hex_num_1, hex_num_0; //4 bit input hex digits
+	logic [1:0] signs;
+	logic [1:0] hundreds;
+	logic [9:0] drawxsig, drawysig, shipxsig, shipysig, shipsizesig;
+	logic [7:0] Red, Blue, Green;
+	logic [7:0] keycode, keycode2, keycode3;
+	logic shootsig;
+
+//=======================================================
+//  Structural coding
+//=======================================================
+	assign ARDUINO_IO[10] = SPI0_CS_N;
+	assign ARDUINO_IO[13] = SPI0_SCLK;
+	assign ARDUINO_IO[11] = SPI0_MOSI;
+	assign ARDUINO_IO[12] = 1'bZ;
+	assign SPI0_MISO = ARDUINO_IO[12];
+	
+	assign ARDUINO_IO[9] = 1'bZ; 
+	assign USB_IRQ = ARDUINO_IO[9];
+		
+	//Assignments specific to Circuits At Home UHS_20
+	assign ARDUINO_RESET_N = USB_RST;
+	assign ARDUINO_IO[7] = USB_RST;//USB reset 
+	assign ARDUINO_IO[8] = 1'bZ; //this is GPX (set to input)
+	assign USB_GPX = 1'b0;//GPX is not needed for standard USB host - set to 0 to prevent interrupt
+	
+	//Assign uSD CS to '1' to prevent uSD card from interfering with USB Host (if uSD card is plugged in)
+	assign ARDUINO_IO[6] = 1'b1;
+	
+	//HEX drivers to convert numbers to HEX output
+	HexDriver hex_driver4 (hex_num_4, HEX4[6:0]);
+	assign HEX4[7] = 1'b1;
+	
+	HexDriver hex_driver3 (hex_num_3, HEX3[6:0]);
+	assign HEX3[7] = 1'b1;
+	
+	HexDriver hex_driver1 (hex_num_1, HEX1[6:0]);
+	assign HEX1[7] = 1'b1;
+	
+	HexDriver hex_driver0 (hex_num_0, HEX0[6:0]);
+	assign HEX0[7] = 1'b1;
+	
+	//fill in the hundreds digit as well as the negative sign
+	assign HEX5 = {1'b1, ~signs[1], 3'b111, ~hundreds[1], ~hundreds[1], 1'b1};
+	assign HEX2 = {1'b1, ~signs[0], 3'b111, ~hundreds[0], ~hundreds[0], 1'b1};
+	
+	
+	//Assign one button to reset
+	assign {Reset_h}=~ (KEY[0]);
+
+	//Our A/D converter is only 12 bit
+	assign VGA_R = Red[7:4];
+	assign VGA_B = Blue[7:4];
+	assign VGA_G = Green[7:4];
+	
+	//contains vga_text_avl_interface which also contains vga_controller
+	labfinal_soc u0 (
+		.clk_clk                           (MAX10_CLK1_50),  //clk.clk
+		.reset_reset_n                     (1'b1),           //reset.reset_n
+		.altpll_0_locked_conduit_export    (),               //altpll_0_locked_conduit.export
+		.altpll_0_phasedone_conduit_export (),               //altpll_0_phasedone_conduit.export
+		.altpll_0_areset_conduit_export    (),               //altpll_0_areset_conduit.export
+		.key_external_connection_export    (KEY),            //key_external_connection.export
+
+		//SDRAM
+		.sdram_clk_clk(DRAM_CLK),                            //clk_sdram.clk
+		.sdram_wire_addr(DRAM_ADDR),                         //sdram_wire.addr
+		.sdram_wire_ba(DRAM_BA),                             //.ba
+		.sdram_wire_cas_n(DRAM_CAS_N),                       //.cas_n
+		.sdram_wire_cke(DRAM_CKE),                           //.cke
+		.sdram_wire_cs_n(DRAM_CS_N),                         //.cs_n
+		.sdram_wire_dq(DRAM_DQ),                             //.dq
+		.sdram_wire_dqm({DRAM_UDQM,DRAM_LDQM}),              //.dqm
+		.sdram_wire_ras_n(DRAM_RAS_N),                       //.ras_n
+		.sdram_wire_we_n(DRAM_WE_N),                         //.we_n
+
+		//USB SPI	
+		.spi0_SS_n(SPI0_CS_N),
+		.spi0_MOSI(SPI0_MOSI),
+		.spi0_MISO(SPI0_MISO),
+		.spi0_SCLK(SPI0_SCLK),
+		
+		//USB GPIO
+		.usb_rst_export(USB_RST),
+		.usb_irq_export(USB_IRQ),
+		.usb_gpx_export(USB_GPX),
+		
+		//LEDs and HEX
+		.hex_digits_export({hex_num_4, hex_num_3, hex_num_1, hex_num_0}),
+		.leds_export({hundreds, signs, LEDR}),
+		.keycode_export(keycode),
+		.keycode2_export(keycode2),
+		.keycode3_export(keycode3),
+		.rand_row_export(rand_row),
+		.rand_factor_export(rand_factor),
+		
+		.vga_port_red (VGA_R_int),
+		.vga_port_green (VGA_G_int),
+		.vga_port_blue (VGA_B_int),
+		.vga_port_hs (VGA_HS),
+		.vga_port_vs (VGA_VS),
+		.vga_port_drawx (drawxsig),
+		.vga_port_drawy (drawysig),
+		//temp
+		.vga_port_lose_life (),
+		.vga_port_pass_up1 (),
+		.vga_port_pass_up2 (),
+		.vga_port_pass_up3 (),
+		.lose_life_export ()
+	 );
+	 
+	logic [2:0] rand_row, rand_factor;
+	 //row selection
+	logic [2:0] firstrow, secondrow, thirdrow;
+	//complains about combination logic bc "not constant"
+	always_ff @ (posedge VGA_VS)
+	begin
+		firstrow <= rand_row;
+		secondrow <= rand_row + rand_factor;
+		thirdrow <= rand_row + rand_factor * 2;
+	end
+
+	logic [9:0] ship_X_motion, ES1_X_motion, ES2_X_motion;
+	//player lasers					 
+	logic [9:0] PX1, PY1, PX2, PY2, PX3, PY3, PX4, PY4;
+	logic PL1, PL2, PL3, PL4;
+	logic PLSize = 2;
+	//enemy lasers
+	logic [9:0] EL1X, E1_2X, EL2X, E2_2X;
+	logic [9:0] EL1Y, E1_2Y, EL2Y, E2_2Y;
+	logic EL1, EL2;
+	logic EL1_2, EL2_2;
+	
+	logic h1, h2, h3, h4, hs;
+	logic h1_1, h1_2, h1_3, h1_4, hs1;
+	logic h2_1, h2_2, h2_3, h2_4, hs2;
+	logic h3_1, h3_2, h3_3, h3_4, hs3;
+	logic h4_1, h4_2, h4_3, h4_4, hs4;
+	logic h5_1, h5_2, h5_3, h5_4, hs5;
+	logic h6_1, h6_2, h6_3, h6_4, hs6;
+	logic h7_1, h7_2, h7_3, h7_4, hs7;
+	logic h8_1, h8_2, h8_3, h8_4, hs8;
+	logic h9_1, h9_2, h9_3, h9_4, hs9;
+	logic h10_1, h10_2, h10_3, h10_4, hs10;
+	logic h11_1, h11_2, h11_3, h11_4, hs11;
+	logic h12_1, h12_2, h12_3, h12_4, hs12;
+	logic h1e, h2e, h3e, h4e;
+	logic h1n, h2n, h3n, h4n;
+	logic h1h, h2h, h3h, h4h;
+	always_comb
+	begin	
+		//laser hits an enemy ship or difficulty block
+		h1 = 	(h1_1 || h2_1 || h3_1 || h4_1 || h5_1 || h6_1 || h7_1 || h8_1 || h9_1 || h10_1 || h11_1 || h12_1	|| hs1_1 || hs2_1
+				|| h1e || h1n || h1h);
+		h2 = 	(h1_2 || h2_2 || h3_2 || h4_2 || h5_2 || h6_2 || h7_2 || h8_2 || h9_2 || h10_2 || h11_2 || h12_2	|| hs1_2	|| hs2_2
+				|| h2e || h2n || h2h);
+		h3 = 	(h1_3 || h2_3 || h3_3 || h4_3 || h5_3 || h6_3 || h7_3 || h8_3 || h9_3 || h10_3 || h11_3 || h12_3	|| hs1_3 || hs2_3
+				|| h3e || h3n || h3h);
+		h4 = 	(h1_4 || h2_4 || h3_4 || h4_4 || h5_4 || h6_4 || h7_4 || h8_4 || h9_4 || h10_4 || h11_4 || h12_4	|| hs1_4 || hs2_4
+				|| h4e || h4n || h4h);
+		//something hits player ship
+		hs = hs1 || hs2 || hs3 || hs4 || hs5 || hs6 || hs7 || hs8 || hs9 || hs10 || hs11 || hs12	|| hss1 || hss2;
+		ship_hit = h1 || h2 || h3 || h4;
+	end
+	
+	//basic enemies
+	logic [9:0] e1X, e2X, e3X, e4X, e5X, e6X, e7X, e8X, e9X, e10X, e11X, e12X;
+	logic [9:0] e1Y, e2Y, e3Y, e4Y, e5Y, e6Y, e7Y, e8Y, e9Y, e10Y, e11Y, e12Y;
+	logic [9:0] e1S, e2S, e3S, e4S, e5S, e6S, e7S, e8S, e9S, e10S, e11S, e12S;
+	logic e1E, e2E, e3E, e4E, e5E, e6E, e7E, e8E, e9E, e10E, e11E, e12E;
+	//enemy shooter
+	logic [9:0] es1X, es2X;
+	logic [9:0] es1Y, es2Y;
+	logic [9:0] es1S, es2S;
+	logic es1E, es2E;
+	logic Eshoot;
+	
+	//difficulty blocks
+	logic [9:0] E_blockX, E_blockY, N_blockX, N_blockY, H_blockX, H_blockY;
+	logic easy_selected, normal_selected, hard_selected;
+	assign start_game = easy_selected || normal_selected || hard_selected;
+	parameter [9:0] block_height = 16;
+	parameter [9:0] block_width = 64;
+
+	logic [2:0] difficulty;
+	parameter [9:0] laser_width = 2; //can be changed
+	parameter [9:0] laser_height = 4;
+	
+	logic lose_life;
+	spaceship  s0(	 .Reset(Reset_h),
+					 .frame_clk(VGA_VS),
+					 .hit(hs),
+					 .keycode(keycode),
+					 .keycode2(keycode2),
+					 .keycode3(keycode3),
+					 .SpaceshipX(shipxsig), .SpaceshipY(shipysig), .SpaceshipS(shipsizesig), .X_motion(ship_X_motion),
+					 .shoot(shootsig),
+					 .lose_life(lose_life)
+					 );
+					 
+	logic [9:0] lives_x, lives_y, score_x, score_y;
+	logic [1:0] num_lives;
+	logic [9:0] score_val;
+	logic lose_game;
+	
+	draw_score ds(.Reset(Reset_h), .frame_clk(VGA_VS), .ship_hit(ship_hit),
+						.ScoreX(score_x), .ScoreY(score_y),
+						.score_counter(score_val)
+						);
+
+	draw_lives	draw_lives(.Reset(Reset_h), .frame_clk(VGA_VS), .lose_life(lose_life),
+						.LivesX(lives_x), .LivesY(lives_y),
+						.lives_counter(num_lives), .lose_game(lose_game)
+						);	
+		
+	difficulty_blocks easy(	.Reset(Reset_h), .frame_clk(VGA_VS), 
+									.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+									.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+									.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+									.laser_width(laser_width), .laser_height(laser_height),
+									.other_selected(normal_selected || hard_selected),
+									.difficulty(2'b00),
+									.block_width(block_width), .block_height(block_height),
+									.blockX(E_blockX), .blockY(E_blockY),
+									.selected(easy_selected),
+									.h1(h1e), .h2(h2e), .h3(h3e), .h4(h4e)
+									);
+						
+	difficulty_blocks normal(.Reset(Reset_h), .frame_clk(VGA_VS), 
+									.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4), 
+									.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+									.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+									.laser_width(laser_width), .laser_height(laser_height),
+									.other_selected(easy_selected || hard_selected),
+									.difficulty(2'b01),
+									.block_width(block_width), .block_height(block_height),
+									.blockX(N_blockX), .blockY(N_blockY),
+									.selected(normal_selected),
+									.h1(h1n), .h2(h2n), .h3(h3n), .h4(h4n)
+									);
+				
+	difficulty_blocks hard(	.Reset(Reset_h), .frame_clk(VGA_VS), 
+									.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4), 
+									.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+									.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+									.laser_width(laser_width), .laser_height(laser_height),
+									.other_selected(normal_selected || easy_selected),
+									.difficulty(2'b10),
+									.block_width(block_width), .block_height(block_height),
+									.blockX(H_blockX), .blockY(H_blockY),
+									.selected(hard_selected),
+									.h1(h1h), .h2(h2h), .h3(h3h), .h4(h4h)
+									);
+	
+	
+	color_mapper cm(.PSX(shipxsig), 
+					 .PSY(shipysig), 
+					 .DrawX(drawxsig), 
+					 .DrawY(drawysig), 
+					 .Psize(shipsizesig),
+					 //inputs from memory
+					 .vram_r(VGA_R_int), .vram_g(VGA_G_int), .vram_b(VGA_B_int),
+					 //lasers
+					 .laser1X(PX1), .laser2X(PX2), .laser3X(PX3), .laser4X(PX4),
+					 .laser1Y(PY1), .laser2Y(PY2), .laser3Y(PY3), .laser4Y(PY4),
+					 .l1(PL1), .l2(PL2), .l3(PL3), .l4(PL4),
+					 //enemies
+					 .e1X(e1X), .e2X(e2X), .e3X(e3X), .e4X(e4X), .e5X(e5X), .e6X(e6X), .e7X(e7X), .e8X(e8X), .e9X(e9X), .e10X(e10X), .e11X(e11X), .e12X(e12X),
+					 .e1Y(e1Y), .e2Y(e2Y), .e3Y(e3Y), .e4Y(e4Y), .e5Y(e5Y), .e6Y(e6Y), .e7Y(e7Y), .e8Y(e8Y), .e9Y(e9Y), .e10Y(e10Y), .e11Y(e11Y), .e12Y(e12Y),
+					 .e1(e1E), .e2(e2E), .e3(e3E), .e4(e4E), .e5(e5E), .e6(e6E), .e7(e7E), .e8(e8E), .e9(e9E), .e10(e10E), .e11(e11E), .e12(e12E),
+					 //enemy shooter
+					 .es1X(es1X), .es2X(es2X),
+					 .es1Y(es1Y), .es2Y(es2Y),
+					 .es1(es1E), .es2(es2E),
+					 //enemy laser
+					 .EL1X(EL1X), .ELX1_2(E1_2X), .EL2X(EL2X), .ELX2_2(E2_2X),
+					 .EL1Y(EL1Y), .ELY1_2(E1_2Y), .EL2Y(EL2Y), .ELY2_2(E2_2Y),
+					 .EL1(EL1), .EL1_2(EL1_2), .EL2(EL2), .EL2_2(EL2_2),
+					 //difficulty blocks
+					 .E_blockX(E_blockX), .N_blockX(N_blockX), .H_blockX(H_blockX),
+					 .E_blockY(E_blockY), .N_blockY(N_blockY), .H_blockY(H_blockY),
+					 .block_width(block_width), .block_height(block_height),
+					 .difficulty_selected(start_game),
+					 //interface
+					 .LivesX(lives_x), .LivesY(lives_y),
+					 .num_lives(num_lives), .lose_game(lose_game),
+					 .score_x(score_x), .score_y(score_y), .score_val(score_val),
+					 .laser_width(laser_width),
+					 .laser_height(laser_height),
+                .Red(Red), 
+					 .Green(Green), 
+					 .Blue(Blue)
+					 );
+	
+	cannon c1(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.laser(shootsig),
+					.collision(h1),
+					.ShipX(shipxsig), .ShipY(shipysig), .ShipS(shipsizesig), .X_motion(ship_X_motion),
+					.prev_laser_exists(1),//(PL2 || PL3) || PL4),
+					.laserX(PX1), .laserY(PY1),
+					.laserexists(PL1)
+					);
+	
+	cannon c2(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.laser(shootsig),
+					.collision(h2),	
+					.ShipX(shipxsig), .ShipY(shipysig), .ShipS(shipsizesig), .X_motion(ship_X_motion),
+					.prev_laser_exists(PL1),
+					.laserX(PX2), .laserY(PY2),
+					.laserexists(PL2)
+					);
+					
+	cannon c3(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.laser(shootsig),
+					.collision(h3),
+					.ShipX(shipxsig), .ShipY(shipysig), .ShipS(shipsizesig), .X_motion(ship_X_motion),
+					.prev_laser_exists(PL2),
+					.laserX(PX3), .laserY(PY3),
+					.laserexists(PL3)
+					);
+				
+	cannon c4(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.laser(shootsig),
+					.collision(h4),
+					.ShipX(shipxsig), .ShipY(shipysig), .ShipS(shipsizesig), .X_motion(ship_X_motion),
+					.prev_laser_exists(PL3),
+					.laserX(PX4), .laserY(PY4),
+					.laserexists(PL4)
+					);
+	/*
+	logic start_game;
+	always_ff @ (posedge VGA_VS)
+	begin	
+		if(keycode == 8'h08)		///temp, for testing purposes, comment out for final
+		begin
+			start_game <= 1;
+		end
+		else
+		begin
+			start_game <= 0;
+		end
+	end*/
+
+	//row will come from C, a specific memory spot will have a random value written into it
+	//can have something like one set of enemies set to row and another set of enemes set to row + 2 or something
+	//enemies 6 and 7 currently replaced with shooters
+	enemy e1(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.spawn(e1sig),
+					.row(firstrow),//firstrow),		//////// check comment above
+					.flydown(flydown),
+					.difficulty(difficulty),
+					.laser_width(laser_width), .laser_height(laser_height),
+					//lasers
+					.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+					.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+					.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+					//player ship position
+					.PSX(shipxsig), .PSY(shipysig),
+					//enemy ship position
+					.SpaceshipX(e1X), .SpaceshipY(e1Y), .SpaceshipS(e1S), .SpaceshipE(e1E),
+					//collision signals
+					.h1(h1_1), .h2(h1_2), .h3(h1_3), .h4(h1_4), .hs(hs1)
+					);
+					
+	enemy e2(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.spawn(e2sig),	
+					.row(rand_row),//firstrow),		//////// check comment above
+					.flydown(flydown),
+					.difficulty(difficulty),
+					.laser_width(laser_width), .laser_height(laser_height),
+					//lasers
+					.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+					.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+					.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+					//player ship position
+					.PSX(shipxsig), .PSY(shipysig),
+					//enemy ship position
+					.SpaceshipX(e2X), .SpaceshipY(e2Y), .SpaceshipS(e2S), .SpaceshipE(e2E),
+					//collision signals
+					.h1(h2_1), .h2(h2_2), .h3(h2_3), .h4(h2_4), .hs(hs2)
+					);
+					
+	enemy e3(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.spawn(e3sig),														
+					.row(rand_row),//firstrow),														
+					.flydown(flydown),
+					.difficulty(difficulty),
+					.laser_width(laser_width), .laser_height(laser_height),
+					//lasers
+					.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+					.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+					.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+					//player ship position
+					.PSX(shipxsig), .PSY(shipysig),
+					//enemy ship position
+					.SpaceshipX(e3X),	.SpaceshipY(e3Y),	.SpaceshipS(e3S),	.SpaceshipE(e3E),											
+					//collision signals
+					.h1(h3_1), .h2(h3_2), .h3(h3_3), .h4(h3_4), .hs(hs3)
+					);
+				
+	enemy e4(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.spawn(e4sig),														
+					.row(rand_row),//firstrow),														
+					.flydown(flydown),
+					.difficulty(difficulty),
+					.laser_width(laser_width), .laser_height(laser_height),
+					//lasers
+					.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+					.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+					.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+					//player ship position
+					.PSX(shipxsig), .PSY(shipysig),
+					//enemy ship position
+					.SpaceshipX(e4X),	.SpaceshipY(e4Y),	.SpaceshipS(e4S),	.SpaceshipE(e4E),												
+					//collision signals
+					.h1(h4_1), .h2(h4_2), .h3(h4_3), .h4(h4_4), .hs(hs4)
+					);	
+	//second string enemy 1
+	enemy e5(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.spawn(e5sig),														
+					.row(rand_row + rand_factor),//secondrow),														
+					.flydown(flydown),
+					.difficulty(difficulty),
+					.laser_width(laser_width), .laser_height(laser_height),
+					//lasers
+					.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+					.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+					.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+					//player ship position
+					.PSX(shipxsig), .PSY(shipysig),
+					//enemy ship position
+					.SpaceshipX(e5X),	.SpaceshipY(e5Y),	.SpaceshipS(e5S),	.SpaceshipE(e5E),													
+					//collision signals
+					.h1(h5_1), .h2(h5_2), .h3(h5_3), .h4(h5_4), .hs(hs5)
+					);	
+					
+	enemy e6(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.spawn(),//e6sig),														
+					.row(rand_row + rand_factor),//secondrow),														
+					.flydown(flydown),
+					.difficulty(difficulty),
+					.laser_width(laser_width), .laser_height(laser_height),
+					//lasers
+					.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+					.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+					.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+					//player ship position
+					.PSX(shipxsig), .PSY(shipysig),
+					//enemy ship position
+					.SpaceshipX(e6X),	.SpaceshipY(e6Y),	.SpaceshipS(e6S),	.SpaceshipE(e6E),												
+					//collision signals
+					.h1(h6_1), .h2(h6_2), .h3(h6_3), .h4(h6_4), .hs(hs6)
+					);	
+
+	enemy e7(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.spawn(),//e7sig),														
+					.row(rand_row + rand_factor),//secondrow),														
+					.flydown(flydown),
+					.difficulty(difficulty),
+					.laser_width(laser_width), .laser_height(laser_height),
+					//lasers
+					.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+					.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+					.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+					//player ship position
+					.PSX(shipxsig), .PSY(shipysig),
+					//enemy ship position
+					.SpaceshipX(e7X),	.SpaceshipY(e7Y),	.SpaceshipS(e7S),	.SpaceshipE(e7E),													
+					//collision signals
+					.h1(h7_1), .h2(h7_2), .h3(h7_3), .h4(h7_4), .hs(hs7)
+					);	
+		
+	enemy e8(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.spawn(e8sig),														
+					.row(rand_row + rand_factor),//secondrow),														
+					.flydown(flydown),
+					.difficulty(difficulty),
+					.laser_width(laser_width), .laser_height(laser_height),
+					//lasers
+					.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+					.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+					.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+					//player ship position
+					.PSX(shipxsig), .PSY(shipysig),
+					//enemy ship position
+					.SpaceshipX(e8X),	.SpaceshipY(e8Y),	.SpaceshipS(e8S),	.SpaceshipE(e8E),													
+					//collision signals
+					.h1(h8_1), .h2(h8_2), .h3(h8_3), .h4(h8_4), .hs(hs8)
+					);	
+		
+	enemy e9(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.spawn(e9sig),														
+					.row(rand_row + rand_factor * 2),//thirdrow),														
+					.flydown(flydown),
+					.difficulty(difficulty),
+					.laser_width(laser_width), .laser_height(laser_height),
+					//lasers
+					.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+					.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+					.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+					//player ship position
+					.PSX(shipxsig), .PSY(shipysig),
+					//enemy ship position
+					.SpaceshipX(e9X),	.SpaceshipY(e9Y),	.SpaceshipS(e9S),	.SpaceshipE(e9E),													
+					//collision signals
+					.h1(h9_1), .h2(h9_2), .h3(h9_3), .h4(h9_4), .hs(hs9)
+					);	
+	
+	enemy e10(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.spawn(e10sig),														
+					.row(rand_row + rand_factor * 2),//thirdrow),														
+					.flydown(flydown),
+					.difficulty(difficulty),
+					.laser_width(laser_width), .laser_height(laser_height),
+					//lasers
+					.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+					.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+					.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+					//player ship position
+					.PSX(shipxsig), .PSY(shipysig),
+					//enemy ship position
+					.SpaceshipX(e10X),	.SpaceshipY(e10Y),	.SpaceshipS(e10S),	.SpaceshipE(e10E),													
+					//collision signals
+					.h1(h10_1), .h2(h10_2), .h3(h10_3), .h4(h10_4), .hs(hs10)
+					);	
+					
+	enemy e11(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.spawn(e11sig),														
+					.row(rand_row + rand_factor * 2),//thirdrow),														
+					.flydown(flydown),
+					.difficulty(difficulty),
+					.laser_width(laser_width), .laser_height(laser_height),
+					//lasers
+					.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+					.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+					.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+					//player ship position
+					.PSX(shipxsig), .PSY(shipysig),
+					//enemy ship position
+					.SpaceshipX(e11X),	.SpaceshipY(e11Y),	.SpaceshipS(e11S),	.SpaceshipE(e11E),												
+					//collision signals
+					.h1(h11_1), .h2(h11_2), .h3(h11_3), .h4(h11_4), .hs(hs11)
+					);	
+					
+	enemy e12(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.spawn(e12sig),														
+					.row(rand_row + rand_factor * 2),//thirdrow),														
+					.flydown(flydown),
+					.difficulty(difficulty),
+					.laser_width(laser_width), .laser_height(laser_height),
+					//lasers
+					.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+					.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+					.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+					//player ship position
+					.PSX(shipxsig), .PSY(shipysig),
+					//enemy ship position
+					.SpaceshipX(e12X),	.SpaceshipY(e12Y),	.SpaceshipS(e12S),	.SpaceshipE(e12E),													
+					//collision signals
+					.h1(h12_1), .h2(h12_2), .h3(h12_3), .h4(h12_4), .hs(hs12)
+					);	
+					
+	enemy es1(	.Reset(Reset_h),
+								.frame_clk(VGA_VS),
+								.spawn(e6sig),														
+								.row(rand_row + rand_factor),//secondrow),														
+								.flydown(flydown),
+								.difficulty(difficulty),
+								.laser_width(laser_width), .laser_height(laser_height),
+								//lasers
+								.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+								.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+								.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+								//player ship position
+								.PSX(shipxsig), .PSY(shipysig),
+								//enemy ship position
+								.SpaceshipX(es1X),	.SpaceshipY(es1Y),	.SpaceshipS(es1S),	.SpaceshipE(es1E), .X_motion(ES1_X_motion),										
+								//collision signals
+								.h1(hs1_1), .h2(hs1_2), .h3(hs1_3), .h4(hs1_4), .hs(hss1)
+						);	
+
+	enemy_cannon EL_1(.Reset(Reset_h),
+							.frame_clk(VGA_VS),
+							.enemy_shoot(Eshoot),
+							.LFSR(LFSR1),
+							.PSX(shipxsig), .PSY(shipysig),
+							.EX(es1X), .EY(es1Y),
+							.prev_laser_exists(1),
+							.laser_width(laser_width), .laser_height(laser_height), .X_motion(ES1_X_motion),
+							.laserX(EL1X), .laserY(EL1Y),
+							.laserexists(EL1),
+							.Phit(Phit1)
+							);
+							
+	//reuse this for another ship, make sure to change everything formated as #_# to just a #
+	enemy_cannon el1_2(.Reset(Reset_h),
+							.frame_clk(VGA_VS),
+							.enemy_shoot(Eshoot),
+							.LFSR(LFSR1),
+							.PSX(shipxsig), .PSY(shipysig),
+							.EX(es1X), .EY(es1Y),
+							.prev_laser_exists(EL1),
+							.laser_width(laser_width), .laser_height(laser_height),
+							.laserX(E1_2X), .laserY(E1_2Y),
+							.laserexists(),//EL1_2),
+							.Phit(Phit1_2)
+							);	
+					
+	enemy es2(	.Reset(Reset_h),
+								.frame_clk(VGA_VS),
+								.spawn(e7sig),														
+								.row(rand_row + rand_factor),//secondrow),														
+								.flydown(flydown),
+								.difficulty(difficulty),
+								.laser_width(laser_width), .laser_height(laser_height),
+								//lasers
+								.PX1(PX1), .PX2(PX2), .PX3(PX3), .PX4(PX4),
+								.PY1(PY1), .PY2(PY2), .PY3(PY3), .PY4(PY4),
+								.PL1(PL1), .PL2(PL2), .PL3(PL3), .PL4(PL4),
+								//player ship position
+								.PSX(shipxsig), .PSY(shipysig),
+								//enemy ship position
+								.SpaceshipX(es2X),	.SpaceshipY(es2Y),	.SpaceshipS(es2S),	.SpaceshipE(es2E), .X_motion(ES2_X_motion),										
+								//collision signals
+								.h1(hs2_1), .h2(hs2_2), .h3(hs2_3), .h4(hs2_4), .hs(hss2)
+						);	
+
+	enemy_cannon EL_2(.Reset(Reset_h),
+							.frame_clk(VGA_VS),
+							.enemy_shoot(Eshoot),
+							.LFSR(LFSR2),
+							.PSX(shipxsig), .PSY(shipysig),
+							.EX(es2X), .EY(es2Y),
+							.prev_laser_exists(1),
+							.laser_width(laser_width), .laser_height(laser_height), .X_motion(ES2_X_motion),
+							.laserX(EL2X), .laserY(EL2Y),
+							.laserexists(EL2),
+							.Phit(Phit1)
+							);
+							
+	enemy_cannon el2_2(.Reset(Reset_h),
+							.frame_clk(VGA_VS),
+							.enemy_shoot(Eshoot),
+							.LFSR(LFSR2),
+							.PSX(shipxsig), .PSY(shipysig),
+							.EX(es2X), .EY(es2Y),
+							.prev_laser_exists(EL2),
+							.laser_width(laser_width), .laser_height(laser_height),
+							.laserX(E2_2X), .laserY(E2_2Y),
+							.laserexists(),//EL2_2),
+							.Phit(Phit2_2)
+							);					
+			
+	enemycontroller waves(	.Reset(Reset_h),
+									.frame_clk(VGA_VS),
+									.easy_selected(easy_selected), .normal_selected(normal_selected), .hard_selected(hard_selected),
+									.e1(e1E), .e2(e2E), .e3(e3E), .e4(e4E), .e5(e5E), .e6(e6E), .e7(e7E), .e8(e8E), .e9(e9E), .e10(e10E), .e11(e11E), .e12(e12E),
+									.start_game(start_game),	//could also become initiate_waves and start_game could be something else
+									.flydown(flydown), .enemy_shoot(Eshoot),
+									.difficulty(difficulty),
+									.wave1_1sig(wave1_1sig), .wave1_2sig(wave1_2sig), .wave1_3sig(wave1_3sig), .wave1_4sig(wave1_4sig),
+									.wave2_1sig(wave2_1sig), .wave2_2sig(wave2_2sig), .wave2_3sig(wave2_3sig), .wave2_4sig(wave2_4sig),
+									.wave3_1sig(wave3_1sig), .wave3_2sig(wave3_2sig), .wave3_3sig(wave3_3sig), .wave3_4sig(wave3_4sig),
+									.wave4_1sig(wave4_1sig), .wave4_2sig(wave4_2sig), .wave4_3sig(wave4_3sig), .wave4_4sig(wave4_4sig)
+									);
+									
+	//still havent tested LFSR, only checked for compile errors
+	//move this logic once you find a good number of bits to check
+	//[5:0] is good, change it so basic ships only have one cannon
+	//wave one is flying down right away
+	//possibly pass down x motion to lasers/cannon so the laser/cannon can have similar movement
+	logic [5:0] LFSR1, LFSR2, LFSR3;
+	LFSR RNG(	.Reset(Reset_h),
+					.frame_clk(VGA_VS),
+					.enemy_shoot1(LFSR1), .enemy_shoot2(LFSR2), .enemy_shoot3(LFSR3)
+					);
+
+							
+	always_comb
+	begin
+		//ships can't be called the wave right after, need a one wave buffer to account for flydown time
+		e1sig = wave1_1sig 					|| wave3_1sig 	|| wave4_1sig;
+		e2sig = wave1_2sig 					|| wave3_2sig 	|| wave4_2sig;
+		e3sig = wave1_3sig 					|| wave3_3sig 	|| wave4_3sig;
+		e4sig = wave1_4sig 					|| wave3_4sig	|| wave4_4sig;
+		e5sig = 					 wave2_1sig 				  	|| wave4_1sig;
+		e6sig = 					 wave2_2sig 				  	|| wave4_2sig;
+		e7sig = 					 wave2_3sig 				  	|| wave4_3sig;
+		e8sig =					 wave2_4sig 				  	|| wave4_4sig;
+		e9sig = 										wave3_1sig 	|| wave4_1sig;
+		e10sig =										wave3_2sig 	|| wave4_2sig;
+		e11sig = 									wave3_3sig 	|| wave4_3sig;
+		e12sig = 									wave3_4sig 	|| wave4_4sig;
+	end		
+					
+endmodule

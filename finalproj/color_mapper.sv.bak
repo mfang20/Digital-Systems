@@ -1,0 +1,300 @@
+//-------------------------------------------------------------------------
+//    Color_Mapper.sv                                                    --
+//    Matthew Fang                                                      --
+//    11-20-21                                                            --
+//-------------------------------------------------------------------------
+
+
+module  color_mapper ( 	input [9:0] PSX, PSY, DrawX, DrawY, Psize,
+								//inputs from memory
+								input [3:0] vram_r, vram_g, vram_b,
+								//lasers
+								input [9:0] laser1X, laser2X, laser3X, laser4X, laser1Y, laser2Y, laser3Y, laser4Y,
+								input l1, l2, l3, l4,
+								//basic enemy
+								input [9:0] e1X, e2X, e3X, e4X, e5X, e6X, e7X, e8X, e9X, e10X, e11X, e12X,
+								input [9:0] e1Y, e2Y, e3Y, e4Y, e5Y, e6Y, e7Y, e8Y, e9Y, e10Y, e11Y, e12Y,
+								input e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12,
+								//enemy shooter
+								input [9:0] es1X, es2X,
+								input [9:0] es1Y, es2Y,
+								input es1, es2,
+								//enemy lasers
+								input [9:0] EL1X, ELX1_2, EL2X, ELX2_2,
+								input [9:0] EL1Y, ELY1_2, EL2Y, ELY2_2,
+								input EL1, EL1_2, EL2, EL2_2,
+								//difficulty blocks
+								input [9:0] E_blockX, N_blockX, H_blockX,
+								input [9:0] E_blockY, N_blockY, H_blockY,
+								input [9:0] block_width, block_height,
+								input difficulty_selected,
+								//interface
+								input [9:0] score_x, score_y, score_val, LivesX, LivesY,
+								input lose_game,
+								input [1:0] num_lives,
+								input [9:0] laser_width, laser_height,
+								output logic [7:0]  Red, Green, Blue );
+
+	 
+	 logic Spaceship_on, Lives_on, laser_on, enemy_on, Score_on, enemy_shooter_on, enemy_laser_on;
+	 logic E_block_on, N_block_on, H_block_on;
+	 logic [9:0] lives_width, lives_height, score_width, score_height;
+	 logic [3:0] lives_bkd_r, lives_bkd_g, lives_bkd_b, lives_fgd_r, lives_fgd_g, lives_fgd_b, Lives_R, Lives_G, Lives_B;
+	 logic [9:0] font_addr;
+	 logic [7:0] font_data;
+	 logic lives_char;
+	 
+	 final_font_rom ffr( .addr(font_addr), .data(font_data));
+	  
+    int DistX, DistY, Size;
+	 assign DistX = DrawX - PSX;
+    assign DistY = DrawY - PSY;
+    assign Size = Psize;
+	  
+    always_comb
+    begin:sprite_on_proc
+	 	if ( (DrawX >= PSX) && (DrawX < PSX + 10) &&
+			(DrawY >= PSY) && (DrawY < PSY + 12)	)
+			Spaceship_on = 1'b1;
+		else 
+			Spaceship_on = 1'b0;
+		//lasers	
+		if	(  (l1 && (	(DrawX >= laser1X) && (DrawX < laser1X + laser_width) &&
+			(DrawY >= laser1Y) && (DrawY < laser1Y + laser_height)	)	)	||
+				 
+			(l2 && (	(DrawX >= laser2X) && (DrawX < laser2X + laser_width) &&
+			(DrawY >= laser2Y) && (DrawY < laser2Y + laser_height)	) 	)	||
+				 
+			(l3 && (	(DrawX >= laser3X) && (DrawX < laser3X + laser_width) &&
+			(DrawY >= laser3Y) && (DrawY < laser3Y + laser_height)	) 	)	||
+				 
+			(l4 && (	(DrawX >= laser4X) && (DrawX < laser4X + laser_width) &&
+			(DrawY >= laser4Y) && (DrawY < laser4Y + laser_height)	)	)
+			)
+			laser_on = 1'b1;
+		else
+			laser_on = 1'b0;
+		//enemy 		
+		if (	
+			(e1 &&	(DrawX >= e1X) && (DrawX < e1X + 10) &&
+			(DrawY >= e1Y) && (DrawY < e1Y + 12)	)		||
+			
+			(e2 && 	(DrawX >= e2X) && (DrawX < e2X + 10) &&
+			(DrawY >= e2Y) && (DrawY < e2Y + 12)	)		||
+			
+			(e3 && 	(DrawX >= e3X) && (DrawX < e3X + 10) &&
+			(DrawY >= e3Y) && (DrawY < e3Y + 12)	)		||
+			
+			(e4 && 	(DrawX >= e4X) && (DrawX < e4X + 10) &&
+			(DrawY >= e4Y) && (DrawY < e4Y + 12)	)		||
+			
+			(e5 && 	(DrawX >= e5X) && (DrawX < e5X + 10) &&
+			(DrawY >= e5Y) && (DrawY < e5Y + 12)	)		||
+			
+			(e6 && 	(DrawX >= e6X) && (DrawX < e6X + 10) &&
+			(DrawY >= e6Y) && (DrawY < e6Y + 12)	)		||
+			
+			(e7 && 	(DrawX >= e7X) && (DrawX < e7X + 10) &&
+			(DrawY >= e7Y) && (DrawY < e7Y + 12)	)		||
+			
+			(e8 && 	(DrawX >= e8X) && (DrawX < e8X + 10) &&
+			(DrawY >= e8Y) && (DrawY < e8Y + 12)	)		||
+			
+			(e9 && 	(DrawX >= e9X) && (DrawX < e9X + 10) &&
+			(DrawY >= e9Y) && (DrawY < e9Y + 12)	)		||
+			
+			(e10 && 	(DrawX >= e10X) && (DrawX < e10X + 10) &&
+			(DrawY >= e10Y) && (DrawY < e10Y + 12)	)		||
+			
+			(e11 && 	(DrawX >= e11X) && (DrawX < e11X + 10) &&
+			(DrawY >= e11Y) && (DrawY < e11Y + 12)	)		||
+			
+			(e12 && 	(DrawX >= e12X) && (DrawX < e12X + 10) &&
+			(DrawY >= e12Y) && (DrawY < e12Y + 12)	)
+			)
+          enemy_on = 1'b1;
+		else 
+          enemy_on = 1'b0;
+		//enemy shooter
+		if	(
+			(es1 &&	(DrawX >= es1X) && (DrawX < es1X + 10) &&
+			(DrawY >= es1Y) && (DrawY < es1Y + 12)	) ||
+			(es2 &&	(DrawX >= es2X) && (DrawX < es2X + 10) &&
+			(DrawY >= es2Y) && (DrawY < es2Y + 12)	)
+			)
+			enemy_shooter_on = 1'b1;
+		else
+			enemy_shooter_on = 1'b0;
+		//enemy laser
+		if	(  (EL1 && (	(DrawX >= EL1X) && (DrawX < EL1X + laser_width) &&
+				(DrawY >= EL1Y) && (DrawY < EL1Y + laser_height)	)	)	||
+				(EL1_2 && (	(DrawX >= ELX1_2) && (DrawX < ELX1_2 + laser_width) &&
+				(DrawY >= ELY1_2) && (DrawY < ELY1_2 + laser_height)	)	) 	||
+				(EL2 && (	(DrawX >= EL2X) && (DrawX < EL2X + laser_width) &&
+				(DrawY >= EL2Y) && (DrawY < EL2Y + laser_height)	)	)	||
+				(EL2_2 && (	(DrawX >= ELX2_2) && (DrawX < ELX2_2 + laser_width) &&
+				(DrawY >= ELY2_2) && (DrawY < ELY2_2 + laser_height)	)	)
+			)
+			enemy_laser_on = 1'b1;
+		else	
+			enemy_laser_on = 1'b0;
+		//lives
+		if ( 	DrawX >= LivesX && DrawX <= (LivesX + lives_width) && DrawY >= LivesY &&
+				DrawY <= LivesY + lives_height) 
+			Lives_on = 1'b1;
+		else 
+			Lives_on = 1'b0;
+		//score
+		if ( 	DrawX >=score_x && DrawX <= (score_x + score_width) && DrawY>= score_y &&
+				DrawY <= score_y + score_height) 
+         Score_on = 1'b1;
+      else 
+			Score_on = 1'b0;
+		//difficulty block
+		if	(!difficulty_selected && ( 
+			(DrawX >= E_blockX) && (DrawX < E_blockX + block_width) &&
+			(DrawY >= E_blockY) && (DrawY < E_blockY + block_height)	) )
+			E_block_on = 1'b1;
+		else
+			E_block_on = 1'b0;
+			
+		if	(!difficulty_selected && ( 
+			(DrawX >= N_blockX) && (DrawX < N_blockX + block_width) &&
+			(DrawY >= N_blockY) && (DrawY < N_blockY + block_height)	) )
+			N_block_on = 1'b1;
+		else
+			N_block_on = 1'b0;
+			
+		if	(!difficulty_selected && ( 
+			(DrawX >= H_blockX) && (DrawX < H_blockX + block_width) &&
+			(DrawY >= H_blockY) && (DrawY < H_blockY + block_height)	) )
+			H_block_on = 1'b1;
+		else
+			H_block_on = 1'b0;
+	end
+		
+	always_comb
+	begin: interface_logic
+		//interface
+		//lives color
+		lives_bkd_r = 4'h0;
+		lives_bkd_g = 4'h0;
+		lives_bkd_b = 4'h0;
+	 
+		lives_fgd_r = 4'hf;
+		lives_fgd_g = 4'h0;
+		lives_fgd_b = 4'h0;
+		if (Lives_on)
+		begin
+			font_addr = 48 + (DrawY-LivesY);
+			lives_char = font_data[DrawX[2:0]];
+		end
+		else
+		begin
+			font_addr = 0;
+			lives_char = 0;
+		end
+		
+		//draw hearts for lives
+		lives_width = num_lives * 8;
+		if (num_lives==0)
+			lives_height = 0;
+		else
+			lives_height = 16; 
+		
+		if (lives_char)
+		begin
+			Lives_R = lives_fgd_r;
+			Lives_G = lives_fgd_g;
+			Lives_B = lives_fgd_b;
+		end
+		else
+		begin
+			Lives_R = lives_bkd_r;
+			Lives_G = lives_bkd_g;
+			Lives_B = lives_bkd_b;
+		end
+		
+		//draw bar for score
+		score_height = score_val * 16;
+		if (score_val==0)
+			score_width = 0;
+		else
+			score_width = 8;
+	end 
+       
+    always_comb
+    begin:RGB_Display			
+			if (Spaceship_on == 1'b1) 
+			begin 
+            Red = 8'hff;
+            Green = 8'h55;
+            Blue = 8'h00;
+			end 
+			else if (laser_on == 1'b1)
+			begin
+				Red = 8'hff;
+				Green = 8'hff;
+				Blue = 8'h00;
+			end
+			else if (enemy_laser_on == 1'b1)
+			begin
+				Red = 8'hff;
+				Green = 8'h00;
+				Blue = 8'h00;
+			end
+			else if (enemy_on == 1'b1)
+			begin
+				Red = 8'h00;
+				Green = 8'h00;
+				Blue = 8'hff;
+			end
+			else if(enemy_shooter_on == 1'b1)
+			begin
+				Red = 8'hff;
+				Green = 8'h00;
+				Blue = 8'h00;
+			end
+			else if (Lives_on == 1'b1)
+			begin
+				Red = Lives_R;
+				Green = Lives_G; 
+				Blue = Lives_B;
+			end
+			
+			else if (Score_on == 1'b1)
+			begin
+				Red = 4'hf;
+				Green = 4'hf; 
+				Blue = 4'hf;
+			end
+			
+			else if(E_block_on == 1'b1)
+			begin
+				Red = 8'h00;
+				Green = 8'hff;
+				Blue = 8'h00;
+			end
+			
+			else if(N_block_on == 1'b1)
+			begin
+				Red = 8'h00;
+				Green = 8'h00;
+				Blue = 8'hff;
+			end
+			
+			else if(H_block_on == 1'b1)
+			begin
+				Red = 8'hff;
+				Green = 8'h00;
+				Blue = 8'h00;
+			end
+			
+			else 
+			begin 
+            Red = vram_r; 
+            Green = vram_g;
+            Blue = vram_b;
+			end 
+		end	
+endmodule

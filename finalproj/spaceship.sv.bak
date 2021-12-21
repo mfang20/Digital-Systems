@@ -1,0 +1,130 @@
+module  spaceship ( input Reset, frame_clk, hit,
+					input [7:0] keycode, keycode2, keycode3,
+               output logic [9:0]  SpaceshipX, SpaceshipY, SpaceshipS, X_motion,
+					output logic shoot, lose_life
+					);
+    
+    logic [9:0] Spaceship_X_Pos, Spaceship_X_Motion, Spaceship_Y_Pos, Spaceship_Y_Motion, Spaceship_Size;
+	 logic [27:0] timer;
+	 logic [2:0] lasertimer = 3'b0;
+
+	 
+    parameter [9:0] Spaceship_X_Center=313;  // Center position on the X axis
+    parameter [9:0] Spaceship_Y_Center=440;  // Center position on the Y axis
+    parameter [9:0] Spaceship_X_Min=0;       // Leftmost point on the X axis
+    parameter [9:0] Spaceship_X_Max=639;     // Rightmost point on the X axis
+    parameter [9:0] Spaceship_Y_Min=0;       // Topmost point on the Y axis
+    parameter [9:0] Spaceship_Y_Max=479;     // Bottommost point on the Y axis
+    parameter [9:0] Spaceship_X_Step=1;      // Step size on the X axis
+    parameter [9:0] Spaceship_Y_Step=1;      // Step size on the Y axis
+
+    assign Spaceship_Size = 4;  // assigns the value 4 as a 10-digit binary number, ie "0000000100"
+   
+	always_ff @ (posedge Reset or posedge frame_clk )
+	begin: Move_Spaceship
+		if (Reset)  // Asynchronous Reset
+		begin 
+			Spaceship_Y_Motion <= 10'd0; //Ball_Y_Step;
+			Spaceship_X_Motion <= 10'd0; //Ball_X_Step;
+			Spaceship_Y_Pos <= Spaceship_Y_Center;
+			Spaceship_X_Pos <= Spaceship_X_Center;
+		end
+        
+		else
+		begin
+			//case (keycode)
+			if(keycode == 8'h04 ||keycode == 8'h07 || keycode2 == 8'h04 ||keycode2 == 8'h07 || keycode3 == 8'h04 ||keycode3 == 8'h07)
+			begin
+				if(keycode == 8'h04 || keycode2 == 8'h04 || keycode3 == 8'h04) //a
+				begin
+					if( (Spaceship_X_Pos - Spaceship_Size) <= Spaceship_X_Min +5) //edge case 
+					begin
+						Spaceship_X_Motion <= 0;
+					end
+					else
+					begin
+						Spaceship_X_Motion <= -3;
+					end
+				end
+				else if (keycode == 8'h07 || keycode2 == 8'h07 || keycode3 == 8'h07) //d
+				begin
+					if( (Spaceship_X_Pos + Spaceship_Size) >= Spaceship_X_Max )	//edge case
+					begin
+						Spaceship_X_Motion <= 0;
+					end
+					else
+					begin
+						Spaceship_X_Motion <= 3;
+					end
+				end
+			end
+			else	//no x motion if a or d not pressed
+			begin
+				Spaceship_X_Motion <= 0;
+			end
+			
+			if(keycode == 8'h16 ||keycode == 8'h1A || keycode2 == 8'h16 ||keycode2 == 8'h1A || keycode3 == 8'h16 ||keycode3 == 8'h1A)	//this should allow for non exclusive x y motion
+			begin
+				if(keycode == 8'h16 || keycode2 == 8'h16 || keycode3 == 8'h16) //s
+				begin
+					if ( (Spaceship_Y_Pos + Spaceship_Size) >= Spaceship_Y_Max )	//edge case
+					begin
+						Spaceship_Y_Motion <= 0;
+					end
+					else 
+					begin
+						Spaceship_Y_Motion <= 3;
+					end
+				end
+				else if(keycode == 8'h1A || keycode2 == 8'h1A || keycode3 == 8'h1A) //w
+				begin
+					if ( (Spaceship_Y_Pos - Spaceship_Size) <= Spaceship_Y_Min + 5)	//edge case
+					begin
+						Spaceship_Y_Motion <= 0;
+					end
+					else
+					begin
+						Spaceship_Y_Motion <= -3;
+					end
+				end
+			end
+			else	//no y motion if s or w not pressed
+			begin
+				Spaceship_Y_Motion <= 0;
+			end
+						
+			if( (keycode == 8'h2C || keycode2 == 8'h2C || keycode3 == 8'h2C) && lasertimer == 0)//space pressed when laser off cd
+			begin
+				shoot <= 1;
+				lasertimer <= 3'b111;
+			end
+			else if (lasertimer != 3'b000)
+			begin
+				shoot <= 0;
+				lasertimer <= lasertimer - 1;
+			end
+			
+			if(hit)
+			begin
+				lose_life <=1;
+			end
+			else
+			begin
+				lose_life <=0;
+			end
+			
+			Spaceship_Y_Pos <= (Spaceship_Y_Pos + Spaceship_Y_Motion); 
+			Spaceship_X_Pos <= (Spaceship_X_Pos + Spaceship_X_Motion);
+			
+		end
+	end
+       
+	always_comb
+	begin
+		SpaceshipX = Spaceship_X_Pos;
+		SpaceshipY = Spaceship_Y_Pos;
+		SpaceshipS = Spaceship_Size;
+		X_motion = Spaceship_X_Motion;
+	end    
+
+endmodule

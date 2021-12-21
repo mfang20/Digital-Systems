@@ -1,0 +1,75 @@
+
+State Machine - |finalproj|boss_controller:boss_controller|State
+Name State.rise_state State.flydown_state State.wait_to_drop State.back_and_forth State.spawn_hold State.hide State.Reset_state 
+State.Reset_state 0 0 0 0 0 0 0 
+State.hide 0 0 0 0 0 1 1 
+State.spawn_hold 0 0 0 0 1 0 1 
+State.back_and_forth 0 0 0 1 0 0 1 
+State.wait_to_drop 0 0 1 0 0 0 1 
+State.flydown_state 0 1 0 0 0 0 1 
+State.rise_state 1 0 0 0 0 0 1 
+
+State Machine - |finalproj|enemycontroller:waves|wavetracker
+Name wavetracker.110 wavetracker.101 wavetracker.100 wavetracker.011 wavetracker.010 wavetracker.001 
+wavetracker.001 0 0 0 0 0 0 
+wavetracker.010 0 0 0 0 1 1 
+wavetracker.011 0 0 0 1 0 1 
+wavetracker.100 0 0 1 0 0 1 
+wavetracker.101 0 1 0 0 0 1 
+wavetracker.110 1 0 0 0 0 1 
+
+State Machine - |finalproj|enemycontroller:waves|State
+Name State.flydown_state State.buffer State.fourth_wave State.third_wave State.second_wave State.first_wave State.start State.Reset_state State.boss_stage 
+State.Reset_state 0 0 0 0 0 0 0 0 0 
+State.start 0 0 0 0 0 0 1 1 0 
+State.first_wave 0 0 0 0 0 1 0 1 0 
+State.second_wave 0 0 0 0 1 0 0 1 0 
+State.third_wave 0 0 0 1 0 0 0 1 0 
+State.fourth_wave 0 0 1 0 0 0 0 1 0 
+State.buffer 0 1 0 0 0 0 0 1 0 
+State.flydown_state 1 0 0 0 0 0 0 1 0 
+State.boss_stage 0 0 0 0 0 0 0 1 1 
+
+State Machine - |finalproj|labfinal_soc:u0|labfinal_soc_sdram:sdram|m_next
+Name m_next.010000000 m_next.000010000 m_next.000001000 m_next.000000001 
+m_next.000000001 0 0 0 0 
+m_next.000001000 0 0 1 1 
+m_next.000010000 0 1 0 1 
+m_next.010000000 1 0 0 1 
+
+State Machine - |finalproj|labfinal_soc:u0|labfinal_soc_sdram:sdram|m_state
+Name m_state.100000000 m_state.010000000 m_state.001000000 m_state.000100000 m_state.000010000 m_state.000001000 m_state.000000100 m_state.000000010 m_state.000000001 
+m_state.000000001 0 0 0 0 0 0 0 0 0 
+m_state.000000010 0 0 0 0 0 0 0 1 1 
+m_state.000000100 0 0 0 0 0 0 1 0 1 
+m_state.000001000 0 0 0 0 0 1 0 0 1 
+m_state.000010000 0 0 0 0 1 0 0 0 1 
+m_state.000100000 0 0 0 1 0 0 0 0 1 
+m_state.001000000 0 0 1 0 0 0 0 0 1 
+m_state.010000000 0 1 0 0 0 0 0 0 1 
+m_state.100000000 1 0 0 0 0 0 0 0 1 
+
+State Machine - |finalproj|labfinal_soc:u0|labfinal_soc_sdram:sdram|i_next
+Name i_next.111 i_next.101 i_next.010 i_next.000 
+i_next.000 0 0 0 0 
+i_next.010 0 0 1 1 
+i_next.101 0 1 0 1 
+i_next.111 1 0 0 1 
+
+State Machine - |finalproj|labfinal_soc:u0|labfinal_soc_sdram:sdram|i_state
+Name i_state.111 i_state.101 i_state.011 i_state.010 i_state.001 i_state.000 
+i_state.000 0 0 0 0 0 0 
+i_state.001 0 0 0 0 1 1 
+i_state.010 0 0 0 1 0 1 
+i_state.011 0 0 1 0 0 1 
+i_state.101 0 1 0 0 0 1 
+i_state.111 1 0 0 0 0 1 
+
+State Machine - |finalproj|labfinal_soc:u0|labfinal_soc_nios2_gen2_0:nios2_gen2_0|labfinal_soc_nios2_gen2_0_cpu:cpu|labfinal_soc_nios2_gen2_0_cpu_nios2_oci:the_labfinal_soc_nios2_gen2_0_cpu_nios2_oci|labfinal_soc_nios2_gen2_0_cpu_debug_slave_wrapper:the_labfinal_soc_nios2_gen2_0_cpu_debug_slave_wrapper|labfinal_soc_nios2_gen2_0_cpu_debug_slave_tck:the_labfinal_soc_nios2_gen2_0_cpu_debug_slave_tck|DRsize
+Name DRsize.101 DRsize.100 DRsize.011 DRsize.010 DRsize.001 DRsize.000 
+DRsize.000 0 0 0 0 0 0 
+DRsize.001 0 0 0 0 1 1 
+DRsize.010 0 0 0 1 0 1 
+DRsize.011 0 0 1 0 0 1 
+DRsize.100 0 1 0 0 0 1 
+DRsize.101 1 0 0 0 0 1 
