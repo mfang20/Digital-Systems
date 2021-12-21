@@ -4,7 +4,7 @@
 A description of the projects for UIUC ECE 385: Digital Systems Laboratory FA2021    
 Course website: https://ece.illinois.edu/academics/courses/ece385  
 
-The SLC3, SDC and NIOS II, and VGA Text Mode Controller (and soon my final project!) are my favorite projects and I encourage you to look at them. 
+The SLC3, SDC and NIOS II, and VGA Text Mode Controller, and my final project X-wing attack (video coming soon), are my favorite projects and I encourage you to look at them. 
 The static hazards and logic processor labs were completed on breadboards, all other projects were completed using SystemVerilog to program an FPGA.
 - Static Hazards: Analyze static hazards of switches.
 - Logic Processor: Created a logic processor that could perform eight possible operations on two registers with various storing options.
@@ -31,6 +31,11 @@ All projects here were worked in collaboration with Michael Grawe.
 - Logic simulation and testbenches
 - Microprocessors and system on chip
 - Project using a microprocessor and system on chip concepts
+  
+# Running the final project
+To run the programs, you will need a VGA display, an FPGA (dE-10 Lite), an IO shield which supports Max3421E, and a USB keyboard.
+Open the project in Altera Quartus and program the device. Then open Eclipse from Quartus and run the code. The program will now be running on the FPGA.
+
 
 #  Academic Integrity reminder
 Taken from ARTICLE 1, PART 4 – ACADEMIC INTEGRITY POLICY AND PROCEDURE section b:
