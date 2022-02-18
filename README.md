@@ -1,6 +1,5 @@
 # ECE 385 Digital Systems Laboratory
-
-(Still in progress, check back in January for my exciting final project demo!)    
+  
 A description of the projects for UIUC ECE 385: Digital Systems Laboratory FA2021    
 Course website: https://ece.illinois.edu/academics/courses/ece385  
 
@@ -13,7 +12,7 @@ The static hazards and logic processor labs were completed on breadboards, all o
 - SLC3: Created a modified SLC3 CPU that could perform various given tasks.
 - NIOS II: Enabled the FPGA to communicate with the NIOS II processor, VGA monitor, and USB peripherals.
 - VGA Text Mode Controller: Created a basic GPU which read from memory to display on a VGA monitor. 
-- Final project: In Progress!  
+- Final project: A space shooter game created in SystemVerilog, check out our video!
 
 All projects here were worked in collaboration with Michael Grawe.  
     
